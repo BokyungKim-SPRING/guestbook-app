@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>간편 방명록</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Noto Sans KR', sans-serif;
+        }
+        body {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+        .form-container, .guestbooks {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="text"], textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        textarea {
+            height: 100px;
+            resize: vertical;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .guestbook-item {
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        .guestbook-item:last-child {
+            border-bottom: none;
+        }
+        .guestbook-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .guestbook-title {
+            font-weight: bold;
+            font-size: 18px;
+        }
+        .guestbook-author {
+            color: #666;
+        }
+        .guestbook-content {
+            margin-bottom: 10px;
+            line-height: 1.5;
+        }
+        .guestbook-image {
+            max-width: 100%;
+            max-height: 200px;
+            margin-top: 10px;
+            border-radius: 4px;
+        }
+        .guestbook-date {
+            color: #999;
+            font-size: 12px;
+            text-align: right;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+        .pagination {
+            display: flex;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .pagination button {
+            margin: 0 5px;
+            background-color: #f0f0f0;
+            color: #333;
+        }
+        .pagination button.active {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .pagination button:disabled {
+            background-color: #ddd;
+            cursor: not-allowed;
+        }
+        .detail-view {
+            display: none;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .back-button {
+            background-color: #f0f0f0;
+            color: #333;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>간편 방명록</h1>
+    
+    <!-- 방명록 작성 폼 -->
+    <div class="form-container">
+        <form id="guestbookForm">
+            <div class="form-group">
+                <label for="name">이름</label>
+                <input type="text" id="name" name="name" required>
+            </div>
+            <div class="form-group">
+                <label for="title">제목</label>
+                <input type="text" id="title" name="title" required>
+            </div>
+            <div class="form-group">
+                <label for="content">내용</label>
+                <textarea id="content" name="content" required></textarea>
+            </div>
+            <div class="form-group">
+                <label for="image">이미지 (선택)</label>
+                <input type="file" id="image" name="image" accept="image/*">
+            </div>
+            <button type="submit">등록하기</button>
+        </form>
+    </div>
+
+    <!-- 방명록 상세 보기 -->
+    <div id="detailView" class="detail-view">
+        <button class="back-button" id="backButton">목록으로</button>
+        <div class="guestbook-header">
+            <div class="guestbook-title" id="detailTitle"></div>
+            <div class="guestbook-author" id="detailAuthor"></div>
+        </div>
+        <div class="guestbook-content" id="detailContent"></div>
+        <div id="detailImageContainer">
+            <img id="detailImage" class="guestbook-image" alt="첨부 이미지">
+        </div>
+        <div class="guestbook-date" id="detailDate"></div>
+    </div>
+    
+    <!-- 방명록 리스트 -->
+    <div class="guestbooks" id="guestbooksList">
+        <div class="loading">방명록 불러오는 중...</div>
+    </div>
+    
+    <!-- 페이지네이션 -->
+    <div class="pagination" id="pagination"></div>
+
+    <script>
+        // 현재 페이지 번호
+        let currentPage = 0;
+        // 전체 페이지 수
+        let totalPages = 0;
+        
+        // 페이지 로드 시 방명록 목록 가져오기
+        document.addEventListener('DOMContentLoaded', function() {
+            fetchGuestbooks(currentPage);
+            
+            // 방명록 폼 제출
+            document.getElementById('guestbookForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                submitGuestbook();
+            });
+            
+            // 목록으로 돌아가기 버튼
+            document.getElementById('backButton').addEventListener('click', function() {
+                document.getElementById('detailView').style.display = 'none';
+                document.getElementById('guestbooksList').style.display = 'block';
+                document.getElementById('pagination').style.display = 'flex';
+            });
+        });
+        
+        // 방명록 목록 가져오기
+        function fetchGuestbooks(page) {
+            const guestbooksContainer = document.getElementById('guestbooksList');
+            guestbooksContainer.innerHTML = '<div class="loading">방명록 불러오는 중...</div>';
+            
+            fetch(`/api/guestbooks?page=${page}&size=5`)
+                .then(response => response.json())
+                .then(data => {
+                    // 데이터 저장
+                    currentPage = data.number;
+                    totalPages = data.totalPages;
+                    
+                    // 목록 표시
+                    displayGuestbooks(data.content);
+                    
+                    // 페이지네이션 표시
+                    displayPagination();
+                })
+                .catch(error => {
+                    console.error('Error fetching guestbooks:', error);
+                    guestbooksContainer.innerHTML = '<div class="loading">방명록을 불러오는데 실패했습니다.</div>';
+                });
+        }
+        
+        // 방명록 목록 표시
+        function displayGuestbooks(guestbooks) {
+            const guestbooksContainer = document.getElementById('guestbooksList');
+            
+            if (guestbooks.length === 0) {
+                guestbooksContainer.innerHTML = '<div class="loading">등록된 방명록이 없습니다.</div>';
+                return;
+            }
+            
+            guestbooksContainer.innerHTML = '';
+            
+            guestbooks.forEach(guestbook => {
+                const formattedDate = new Date(guestbook.createdAt).toLocaleString('ko-KR');
+                
+                const guestbookElement = document.createElement('div');
+                guestbookElement.className = 'guestbook-item';
+                guestbookElement.innerHTML = `
+                    <div class="guestbook-header">
+                        <div class="guestbook-title">${guestbook.title}</div>
+                        <div class="guestbook-author">${guestbook.name}</div>
+                    </div>
+                    <div class="guestbook-content">${guestbook.content.length > 100 ? guestbook.content.substring(0, 100) + '...' : guestbook.content}</div>
+                    ${guestbook.imageUrl ? '<div>📷 이미지 첨부됨</div>' : ''}
+                    <div class="guestbook-date">${formattedDate}</div>
+                `;
+                
+                // 클릭 이벤트 추가 - 상세 보기
+                guestbookElement.addEventListener('click', function() {
+                    viewGuestbookDetail(guestbook.id);
+                });
+                
+                guestbooksContainer.appendChild(guestbookElement);
+            });
+        }
+        
+        // 페이지네이션 표시
+        function displayPagination() {
+            const paginationContainer = document.getElementById('pagination');
+            paginationContainer.innerHTML = '';
+            
+            // 처음 페이지 버튼
+            const firstButton = document.createElement('button');
+            firstButton.textContent = '처음';
+            firstButton.disabled = currentPage === 0;
+            firstButton.addEventListener('click', () => fetchGuestbooks(0));
+            paginationContainer.appendChild(firstButton);
+            
+            // 이전 페이지 버튼
+            const prevButton = document.createElement('button');
+            prevButton.textContent = '이전';
+            prevButton.disabled = currentPage === 0;
+            prevButton.addEventListener('click', () => fetchGuestbooks(currentPage - 1));
+            paginationContainer.appendChild(prevButton);
+            
+            // 현재 페이지 표시
+            const currentPageSpan = document.createElement('button');
+            currentPageSpan.textContent = (currentPage + 1) + ' / ' + totalPages;
+            currentPageSpan.classList.add('active');
+            paginationContainer.appendChild(currentPageSpan);
+            
+            // 다음 페이지 버튼
+            const nextButton = document.createElement('button');
+            nextButton.textContent = '다음';
+            nextButton.disabled = currentPage >= totalPages - 1;
+            nextButton.addEventListener('click', () => fetchGuestbooks(currentPage + 1));
+            paginationContainer.appendChild(nextButton);
+            
+            // 마지막 페이지 버튼
+            const lastButton = document.createElement('button');
+            lastButton.textContent = '끝';
+            lastButton.disabled = currentPage >= totalPages - 1;
+            lastButton.addEventListener('click', () => fetchGuestbooks(totalPages - 1));
+            paginationContainer.appendChild(lastButton);
+        }
+        
+        // 방명록 등록하기
+        function submitGuestbook() {
+            const form = document.getElementById('guestbookForm');
+            const formData = new FormData(form);
+            
+            // 이미지가 없으면 폼데이터에서 제거
+            if (!formData.get('image').size) {
+                formData.delete('image');
+            }
+            
+            fetch('/api/guestbooks', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                // 폼 초기화
+                form.reset();
+                // 최신 방명록 목록 다시 로드
+                fetchGuestbooks(0);
+                alert('방명록이 등록되었습니다.');
+            })
+            .catch(error => {
+                console.error('Error submitting guestbook:', error);
+                alert('방명록 등록에 실패했습니다.');
+            });
+        }
+        
+        // 방명록 상세 보기
+        function viewGuestbookDetail(id) {
+            fetch(`/api/guestbooks/${id}`)
+                .then(response => response.json())
+                .then(guestbook => {
+                    const detailView = document.getElementById('detailView');
+                    const formattedDate = new Date(guestbook.createdAt).toLocaleString('ko-KR');
+                    
+                    // 데이터 설정
+                    document.getElementById('detailTitle').textContent = guestbook.title;
+                    document.getElementById('detailAuthor').textContent = guestbook.name;
+                    document.getElementById('detailContent').textContent = guestbook.content;
+                    document.getElementById('detailDate').textContent = formattedDate;
+                    
+                    // 이미지 처리
+                    const imageContainer = document.getElementById('detailImageContainer');
+                    const image = document.getElementById('detailImage');
+                    
+                    if (guestbook.imageUrl) {
+                        image.src = guestbook.imageUrl;
+                        imageContainer.style.display = 'block';
+                    } else {
+                        imageContainer.style.display = 'none';
+                    }
+                    
+                    // 상세 보기 표시
+                    document.getElementById('guestbooksList').style.display = 'none';
+                    document.getElementById('pagination').style.display = 'none';
+                    detailView.style.display = 'block';
+                })
+                .catch(error => {
+                    console.error('Error fetching guestbook detail:', error);
+                    alert('방명록 상세 정보를 불러오는데 실패했습니다.');
+                });
+        }
+    </script>
+</body>
+</html>
