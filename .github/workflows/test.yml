@@ -24,7 +24,7 @@ jobs:
 
       - name: Set environment variables
         run: |
-          echo "ECR_REGISTRY=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com" >> $GITHUB_ENV
+          echo "ECR_REGISTRY=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com" >> $GITHUB_ENV
           echo "ECR_REPOSITORY=guestbook-app" >> $GITHUB_ENV
           echo "IMAGE_TAG=$(date +'%Y%m%d%H%M%S')-${GITHUB_SHA::8}" >> $GITHUB_ENV
 
@@ -38,7 +38,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWS_DEPLOY_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_DEPLOY_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
+          aws-region: ${{ vars.AWS_REGION }}
 
       - name: Login to Amazon ECR
         id: login-ecr
