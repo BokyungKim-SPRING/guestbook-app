@@ -41,8 +41,8 @@ jobs:
 
       - name: Tag Docker image
         run: |
-          docker tag guest-app:latest ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
-          docker tag guest-app:latest ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest
+          docker tag guestbook-app:latest ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
+          docker tag guestbook-app:latest ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
