@@ -3,6 +3,9 @@ name: AWS connection Test
 on:
   workflow_dispatch:
 
+env:
+  AWS_REGION: ${{ vars.AWS_REGION }}
+
 jobs:
   test-aws-connection:
     runs-on: ubuntu-latest
@@ -18,6 +21,7 @@ jobs:
 
       - name: Grant execute permission for gradlew
         run: chmod +x ./gradlew
+
       - name: Build with Gradle
         run: ./gradlew test
 
