@@ -62,8 +62,7 @@ jobs:
         
       - name: Download task definition
         run: |
-          aws ecs describe-task-definition --task-definition guestbook-app-2 \\
-          --query taskDefinition > task-definition.json
+          aws ecs describe-task-definition --task-definition guestbook-app-2 --query taskDefinition > task-definition.json
 
       - name: Update task definition with new image
         id: render-task-def
