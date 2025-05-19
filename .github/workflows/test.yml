@@ -71,7 +71,7 @@ jobs:
           task-definition: task-definition.json
           container-name: app
           image: ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
-          environment-variables: "SPRING_PROFILES_ACTIVE=dev;HELLO=world"
+          environment-variables: "SPRING_PROFILES_ACTIVE=dev,HELLO=world"
 
       - name: Deploy to Amazon ECS
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2
