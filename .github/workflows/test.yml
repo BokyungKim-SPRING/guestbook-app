@@ -60,4 +60,39 @@ jobs:
           docker push ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
           docker push ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:latest
         
+      - name: Download task definition
+        run: |
+          aws ecs describe-task-definition --task-definition guestbook-app-2 \\
+          --query taskDefinition > task-definition.json
+
+      - name: Update task definition with new image
+        id: render-task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-definition.json
+          container-name: app
+          image: ${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
+          environment-variables: "SPRING_PROFILES_ACTIVE=dev;HELLO=world"
+
+      - name: Deploy to Amazon ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{ steps.render-task-def.outputs.task-definition }}
+          cluster: myapp2
+          service: guestbook-app-2-service-wjzq2cmq
+          wait-for-service-stability: true
+
+      - name: Verify deployment
+        run: |
+          echo "Verifying deployment..."
+          SERVICE_STATUS=$(aws ecs describe-services --cluster myapp2 --services guestbook-app-2-service-wjzq2cmq --query 'services[0].status' --output text)
+          
+          if [ "$SERVICE_STATUS" = "ACTIVE" ]; then
+            echo "Deployment successful! Service is active."
+          else
+            echo "Deployment may have issues. Service status: $SERVICE_STATUS"
+            exit 1
+          fi
+
+          
 
