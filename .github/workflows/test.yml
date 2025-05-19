@@ -74,7 +74,7 @@ jobs:
           environment-variables: "SPRING_PROFILES_ACTIVE=dev;HELLO=world"
 
       - name: Deploy to Amazon ECS
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
         with:
           task-definition: ${{ steps.render-task-def.outputs.task-definition }}
           cluster: myapp2
